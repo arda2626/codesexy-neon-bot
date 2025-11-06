@@ -5,38 +5,33 @@ import time
 from datetime import datetime
 from telegram import Bot
 
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-CHANNEL_ID = '@CodeSexy2025'
-bot = Bot(token=TELEGRAM_TOKEN)
+TOKEN = os.getenv('TELEGRAM_TOKEN')
+CHANNEL = '@CodeSexy2025'
+bot = Bot(token=TOKEN)
 
-def get_price(coin):
-    url = f'https://api.coingecko.com/api/v3/simple/price?ids={coin}&vs_currencies=usd'
+def price(coin):
     try:
-        return requests.get(url).json()[coin]['usd']
+        return requests.get(f'https://api.coingecko.com/api/v3/simple/price?ids={coin}&vs_currencies=usd').json()[coin]['usd']
     except:
-        return 0
+        return {'bitcoin':103926, 'ethereum':3412, 'solana':182.5}.get(coin, 0)
 
-def send_signal():
-    btc = get_price('bitcoin') or 103926
-    eth = get_price('ethereum') or 3412
-    sol = get_price('solana') or 182.5
+def signal():
+    b,e,s = price('bitcoin'), price('ethereum'), price('solana')
+    return f"""NEON SİNYAL {datetime.now().strftime('%H:%M')}
 
-    msg = f"""⚡️ NEON SİNYAL {datetime.now().strftime('%H:%M')}
+BTC SHORT @ {b}$
+TP1: {b-700}$ | SL: {b+500}$
 
-📉 BTC SHORT @ {btc}$
-✅ TP1: {btc-700}$ | SL: {btc+500}$
+ETH LONG @ {e}$
+TP1: {e+100}$ | SL: {e-90}$
 
-📈 ETH LONG @ {eth}$
-✅ TP1: {eth+100}$ | SL: {eth-90}$
-
-📉 SOL SHORT @ {sol}$
-✅ TP: {sol-3}$ | SL: {sol+2}$
+SOL SHORT @ {s}$
+TP: {s-3}$ | SL: {s+2}$
 
 #CodeSexy"""
-    bot.send_message(chat_id=CHANNEL_ID, text=msg)
 
-schedule.every().day.at("09:00").do(send_signal)
-schedule.every().day.at("18:00").do(send_signal)
+schedule.every().day.at("09:00").do(lambda: bot.send_message(CHANNEL, signal()))
+schedule.every().day.at("18:00").do(lambda: bot.send_message(CHANNEL, signal()))
 
 while True:
     schedule.run_pending()
